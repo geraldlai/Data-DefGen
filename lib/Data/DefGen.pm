@@ -8,7 +8,7 @@ BEGIN {
     require Exporter;
     *import = \&Exporter::import;
 
-    our $VERSION = "1.001001";
+    our $VERSION = "1.001002";
     our @EXPORT = qw(def);
 }
 
@@ -115,7 +115,7 @@ Calling C<gen> method on the returned object will recursively execute all the de
 
 By default, a shallow copy is performed whenever a blessed object is encountered. To override this behavior, pass an C<obj_cloner> function:
 
-  my $defn = def { ... }, obj_cloner => sub { my_cloning($_[0]) };
+  my $defn = def { ... } obj_cloner => sub { my_cloning($_[0]) };
 
 
 =head1 CREDIT

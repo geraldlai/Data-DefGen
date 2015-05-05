@@ -3,7 +3,7 @@ use strict;
 
 use Test::More;
 
-BEGIN { plan tests => 9 }
+BEGIN { plan tests => 10 }
 
 use lib "../lib";
 BEGIN { use_ok("Data::DefGen", qw(def)); }
@@ -22,8 +22,8 @@ BEGIN { use_ok("Data::DefGen", qw(def)); }
     @a = def { (11, 22, 33) }->gen;
     is_deeply( \@a, [11, 22, 33], "list context 2" );
 
-    my %h = def { qw(a b), def { qw(c d e) }, 'f' }->gen;
-    is_deeply( \%h, {a => 'b', c => 'd', e => 'f'}, "list context 3" );
+    my %h = def { qw(a b), def { qw(c d e) }, "f" }->gen;
+    is_deeply( \%h, {a => "b", c => "d", e => "f"}, "list context 3" );
 }
 
 # params passing
@@ -33,7 +33,7 @@ BEGIN { use_ok("Data::DefGen", qw(def)); }
     my $i = -1;
     my $catch = sub { push @{ $captured[++$i] }, @_ };
 
-    my @params = ('foo', 127, {6..9}, [3..6]);
+    my @params = ("foo", 127, {6..9}, [3..6]);
 
     def {
         $catch->(@_);
@@ -60,7 +60,7 @@ BEGIN { use_ok("Data::DefGen", qw(def)); }
 
     my $defn = def {
         return {
-            foo => 'bar',
+            foo => "bar",
             baz => def {
                 return {
                     qux => [
@@ -76,19 +76,31 @@ BEGIN { use_ok("Data::DefGen", qw(def)); }
     my @datas = def { ($defn) x 3 }->gen;
 
     is_deeply( \@datas, [{
-        foo => 'bar',
+        foo => "bar",
         baz => {
-            qux => ['abc', [1, 66], [1, 1]],
+            qux => ["abc", [1, 66], [1, 1]],
         },
     }, {
-        foo => 'bar',
+        foo => "bar",
         baz => {
-            qux => ['cde', [2, 77], [2, 3]],
+            qux => ["cde", [2, 77], [2, 3]],
         },
     }, {
-        foo => 'bar',
+        foo => "bar",
         baz => {
-            qux => ['efg', [3, 88], [5, 8]],
+            qux => ["efg", [3, 88], [5, 8]],
         },
     }], "nesting" );
+}
+
+# object cloning
+{
+    my $defn = def {
+        return (
+            (bless { }, "Foo"),
+            def { ["bar", (bless { }, "Baz")] },
+        );
+    } obj_cloner => sub { "my_clone" };
+
+    is_deeply( [$defn->gen], ["my_clone", ["bar", "my_clone"]], "object clone" );
 }
