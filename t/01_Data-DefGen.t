@@ -97,10 +97,11 @@ BEGIN { use_ok("Data::DefGen", qw(def)); }
 {
     my $defn = def {
         return (
-            (bless { }, "Foo"),
-            def { ["bar", (bless { }, "Baz")] },
+            (bless {attr1 => "Foo clone"}, "Foo"),
+            def { ["bar", (bless {attr2 => "Baz clone"}, "Baz")] }
+              obj_cloner => sub { shift->{attr2} },
         );
-    } obj_cloner => sub { "my_clone" };
+    } obj_cloner => sub { shift->{attr1} };
 
-    is_deeply( [$defn->gen], ["my_clone", ["bar", "my_clone"]], "object clone" );
+    is_deeply( [$defn->gen], ["Foo clone", ["bar", "Baz clone"]], "object clone" );
 }

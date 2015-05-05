@@ -2,13 +2,12 @@ package Data::DefGen;
 
 use warnings;
 use strict;
-use mro qw(c3);
 
 BEGIN {
     require Exporter;
     *import = \&Exporter::import;
 
-    our $VERSION = "1.001002";
+    our $VERSION = "1.001003";
     our @EXPORT = qw(def);
 }
 
@@ -38,7 +37,11 @@ sub _init {
 sub gen {
     my $self = shift;
     local $self->{gen_p} = \@_;
-    return $self->_gen($self);
+
+    return $self->_gen($self->{data}) if ref($self->{data}) ne "CODE";
+
+    my @data = @{ $self->_gen([ $self->{data}->(@_) ]) };
+    return @data[0 .. $#data];
 }
 
 sub _gen {
@@ -46,17 +49,9 @@ sub _gen {
 
     if (defined blessed($_[0]))
     {
-        if ($_[0]->isa(ref $self))
-        {
-            return $self->_gen($_[0]->{data}) if ref($_[0]->{data}) ne "CODE";
-
-            my @data = @{ $self->_gen([ $_[0]->{data}->(@{ $self->{gen_p} }) ]) };
-            return @data[0 .. $#data];
-        }
-        else
-        {
-            return $self->{obj_cloner}->($_[0]);
-        }
+        return $_[0]->isa(ref $self)
+          ? $_[0]->gen(@{ $self->{gen_p} })
+          : $self->{obj_cloner}->($_[0]);
     }
 
     my $type = reftype($_[0]);
@@ -113,9 +108,11 @@ This module exports a single C<def> function that takes a CODE block to define a
 
 Calling C<gen> method on the returned object will recursively execute all the definitions, and return the entire generated data structure. Params passed to C<gen> will be received by all CODE definitions.
 
-By default, a shallow copy is performed whenever a blessed object is encountered. To override this behavior, pass an C<obj_cloner> function:
+By default, a shallow copy is performed whenever a blessed object is encountered. To override this behavior, pass an C<obj_cloner> function, per C<def> block:
 
   my $defn = def { ... } obj_cloner => sub { my_cloning($_[0]) };
+
+Unlike C<gen> params, the C<obj_cloner> function does not propagate to nested definitions.
 
 
 =head1 CREDIT
